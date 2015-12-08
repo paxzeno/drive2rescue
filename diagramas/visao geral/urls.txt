@@ -1,0 +1,24 @@
+Modulos:
+  Tablet <=> Raspberry Pi:
+    Bluetooth => http://www.ptrobotics.com/wireless/3593-sparkfun-bluetooth-modem-bluesmirf-silver.html
+    ATMega328
+
+  Raspberry Pi <=> 3G
+    Placa 3g => http://www.ptrobotics.com/gsm/2657-itead-3g-shield.html
+    ATMega328
+
+  Raspberry Pi <=> GPS
+    Placa GPS => http://www.ptrobotics.com/gps/2567-adafruit-ultimate-gps-breakout-66-channel-w-10-hz-updates-version-3.html
+    ATMega328
+
+  Raspberry Pi <=> Medir Nível de Agua
+    ATMega328
+    Mecanismo de activação de medidor
+    Mecanismo de medir nível
+
+  Raspberry Pi <=> Status da Bomba
+    ATMega328
+    Mecanismo de medir status da bomba.
+
+  Raspberry Pi <=> Mesh NetWork
+    A planear...

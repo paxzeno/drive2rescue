@@ -1,0 +1,12 @@
+
+url com varias formas para passar de 5v para 3.3v.
+
+https://www.google.pt/search?q=uart+5v+to+3.3v&biw=1920&bih=1089&tbm=isch&imgil=4195H7p_q3SKSM%253A%253Bz3omUpizusDKWM%253Bhttp%25253A%25252F%25252Fblog.sunyday.net%25252F%25253Fp%2525253D36&source=iu&pf=m&fir=4195H7p_q3SKSM%253A%252Cz3omUpizusDKWM%252C_&usg=__h7iUdu_-9i-5AD-E6ZIQMjrVKKc%3D#imgrc=Y8FihJjVpZU9BM%3A&usg=__h7iUdu_-9i-5AD-E6ZIQMjrVKKc%3D
+
+
+
+
+
+Sites com exemplo de 5v para 3.3v e o contrario.
+	https://startingelectronics.org/articles/GT-511C3-fingerprint-scanner-hardware/
+	https://community.particle.io/t/counter-top-lcd-to-display-next-bus-times/2020/16
