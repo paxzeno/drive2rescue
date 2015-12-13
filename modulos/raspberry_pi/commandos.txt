@@ -1,0 +1,92 @@
+REQUEST/REPLY
+
+HEADER:
+	ORIGEM
+	DESTINO
+	OPERACAO
+
+BODY:
+	RESPONSE_DATA
+
+EXEMPLOS:
+		REQUEST:
+			ORIGEM:DESTINO:OPERACAO
+			
+		REPLY:
+			ORIGEM:DESTINO:OPERACAO:RESPONSE_DATA
+
+#############################################
+#############################################
+	STATUS DO EQUIPAMENTO:
+		REQUEST:
+			PI:PUMP:AYT (ARE YOU THERE)
+			PI:WTANK:AYT (ARE YOU THERE)
+			PI:GPS:AYT (ARE YOU THERE)
+			PI:3G:AYT (ARE YOU THERE)
+
+		REPLY:
+			PUMP:PI:AYT:XXXY:OK
+			WTANK:PI:AYT:KO (erro)
+			GPS:PI:AYT:EM-506:OK
+			3G:PI:AYT:Adafruit FONA:OK
+
+##########################################################################################
+	CAR PUMP:
+		REQUEST:
+			PI:PUMP:STATUS
+		
+		REPLY:
+			PUMP:PI:STATUS:0
+				0 = off
+				1 = on
+				
+##########################################################################################
+	WATER TANK:
+		REQUEST:
+			PI:WTANK:LEVEL
+		REPLY:
+			WTANK:PI:LEVEL:4 (0,1,2,3,4)
+				0 = 0%
+				1 = 25%
+				2 = 50%
+				3 = 75%
+				4 = 100%
+##########################################################################################		
+	GPS:
+		REQUEST:
+		PI:GPS:WAI (WHERE M I)
+		
+		REPLY:
+			PI:GPS:WAI:Lat:40.62479337631062,long:-74.35066223144531
+				O formato da mensagem será tratado no raspberry.
+
+##########################################################################################
+	3G:
+
+		REQUEST:
+			PI:3G:ISONLINE
+		
+		REPLY:
+			3G:PI:ISONLINE:1
+				1 = online
+				0 = offline
+#############################################
+		REQUEST:
+			PI:3G:SEND:{ gsp: 234234,234234; status_bomba:0; create_at:20151023234321 }
+			
+		REPLY:			
+			3G:PI:SEND:OK
+				OK = envio com sucesso
+				TIMEOUT = deu erro de timeout a enviar
+				NOK = com mensagem de erro
+
+
+PI => quando se liga faz diagnostico de perifericos, tem de ir a uma bd local buscar as configurações:
+	- que GPS está a usar
+	- que 3G está a usar
+	- que modulos tem (isto para não pedir info de modulos que não existem)
+	
+	
+	
+	
+TER MECANISMO DE DOWNLOAD DE NOVA VERSAO DE CODIGO. (PENSAR NUMA FORMA)
