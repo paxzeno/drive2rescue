@@ -1,0 +1,44 @@
+###################################
+# SEND SMS
+###################################
+
+AT+CMGF=1
+AT+CMGS="+351917863184"
+Hello
+1A <= in HEX
+
+###################################
+# HTTP GET
+###################################
+AT+CREG	// command to check the connection.
+
+APN: internet.vodafone.pt
+user: vodafone
+pass: vodafone
+	
+	
+AT+CSQ
+AT+CGATT?
+
+AT+SAPBR=3,1,"CONTYPE","GPRS" //setting the SAPBR, the connection type is using gprs
+AT+SAPBR=3,1,"APN","internet.vodafone.pt"
+AT+SAPBR=3,1,"USER","vodafone"
+AT+SAPBR=3,1,"PWD","vodafone"
+	
+AT+SAPBR=1,1 // To open a GPRS context.
+
+AT+SAPBR=2,1 // To query the GPRS context.
+
+AT+HTTPINIT //init the HTTP request	
+
+AT+HTTPPARA="CID",1 //Set parameters for HTTP session
+	
+AT+HTTPPARA="URL","http://www.google.pt/?gfe_rd=cr&amp;ei=DyCIVqf4D-2r8wemxwk" // setting the httppara, the second parameter is the website you want to access
+	
+AT+HTTPACTION=0 //submit the request
+	
+AT+HTTPREAD // read the data from the website you access
+	
+AT+HTTPTERM // terminate http connection
+	
+AT+SAPBR=0,1 // close GPRS connection

@@ -1,0 +1,13 @@
+SIM8080:
+
+	http://www.aliexpress.com/item/SIM808-Module-GSM-GPRS-GPS-Development-Board-IPX-SMA-with-GPS-Antenna-for-Arduino-Raspberry-Pi/32475803240.html?spm=2114.031010208.3.2.UYIrSE&ws_ab_test=searchweb201556_1_79_78_77_92_91_80%2csearchweb201644_5%2csearchweb201560_9
+
+	https://www.adafruit.com/products/2637
+
+	# a testar a ver se funciona com este modulo.
+	https://www.arduino.cc/en/Tutorial/LibraryExamples#gsm
+
+	# para outrao broard mas o ship é o mesmo por isso o codigo server com umas adaptações.
+	http://www.elecrow.com/wiki/index.php?title=SIM808_GPRS/GSM%2BGPS_Shield_v1.0
+
+	https://github.com/itead/ITEADLIB_Arduino_SIMCom
