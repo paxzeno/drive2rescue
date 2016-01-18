@@ -1,3 +1,5 @@
+http://m2msupport.net/m2msupport/atcreg-network-registration/
+
 ###################################
 # SEND SMS
 ###################################
@@ -10,35 +12,98 @@ Hello
 ###################################
 # HTTP GET
 ###################################
-AT+CREG	// command to check the connection.
+AT+CREG?	// command to check the connection.
+AT+CREG=1 // register to network
+
+	Results of network registration status commans,
+		0,0 – not registered, MT is not currently searching a new operator to register to
+		0,1 – Registered, home network
+		0,2 – Searching
+		0,3 – Registration denied
+		0,5 – Registered, non-home network
+
+####################
 
 APN: internet.vodafone.pt
 user: vodafone
 pass: vodafone
+
+APN: internet
+user: ""
+pass: ""
 	
-	
+// check signal
 AT+CSQ
-AT+CGATT?
+	+CSQ: 10,0
 
-AT+SAPBR=3,1,"CONTYPE","GPRS" //setting the SAPBR, the connection type is using gprs
-AT+SAPBR=3,1,"APN","internet.vodafone.pt"
-AT+SAPBR=3,1,"USER","vodafone"
-AT+SAPBR=3,1,"PWD","vodafone"
-	
-AT+SAPBR=1,1 // To open a GPRS context.
+	OK
 
-AT+SAPBR=2,1 // To query the GPRS context.
+// Check the status of Packet service attach. '0' implies device is not attached and '1' implies device is attached.
+AT+CGATT? 
+	+CGATT: 1 // atatched
 
-AT+HTTPINIT //init the HTTP request	
+	OK
 
-AT+HTTPPARA="CID",1 //Set parameters for HTTP session
+####################################
+//setting the SAPBR, the connection type is using gprs
+AT+SAPBR=3,1,"CONTYPE","GPRS"
+	OK
+
+VODAFONE:
+	AT+SAPBR=3,1,"APN","internet.vodafone.pt"	// deixou de funcionar
+		OK
+	AT+SAPBR=3,1,"USER","vodafone"
+		OK
+	AT+SAPBR=3,1,"PWD","vodafone"
+		OK	
+	##########
+	AT+SAPBR=3,1,"APN","net2.vodafone.pt"
+		OK
+	AT+SAPBR=3,1,"USER",""
+		OK
+	AT+SAPBR=3,1,"PWD",""
+		OK
+		
+#####################################
 	
-AT+HTTPPARA="URL","http://www.google.pt/?gfe_rd=cr&amp;ei=DyCIVqf4D-2r8wemxwk" // setting the httppara, the second parameter is the website you want to access
+// To close GPRS context
+AT+SAPBR=0,1 
 	
-AT+HTTPACTION=0 //submit the request
+// To open a GPRS context.
+AT+SAPBR=1,1
+	OK
+
+// To query the GPRS context.
+AT+SAPBR=2,1
+	+SAPBR: 1,1,"10.87.92.48"
+	OK
+
+//init the HTTP request	
+AT+HTTPINIT
+	OK
+
+//Set parameters for HTTP session
+AT+HTTPPARA="CID",1
+	OK
+
+AT+HTTPPARA="URL","http://www.checkupdown.com/status/E500_pt.html"
 	
+// setting the httppara, the second parameter is the website you want to access
+AT+HTTPPARA="URL","http://www.google.pt/?gfe_rd=cr&amp;ei=DyCIVqf4D-2r8wemxwk"
+	OK
+
+AT+HTTPPARA="URL","http://www.m2msupport.net/m2msupport/test.php"
+	OK
+
+ //submit the request
+AT+HTTPACTION=0
+	OK
 AT+HTTPREAD // read the data from the website you access
+	????
+	OK
 	
-AT+HTTPTERM // terminate http connection
+	
+// terminate http connection
+AT+HTTPTERM
 	
 AT+SAPBR=0,1 // close GPRS connection
