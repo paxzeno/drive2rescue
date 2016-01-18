@@ -1,5 +1,7 @@
 #include <SoftwareSerial.h>
 
+#define _SS_MAX_RX_BUFF 256 // RX buffer size //BEFORE WAS 64
+
 SoftwareSerial softSerialB(10, 11); // RX, TX
 
 void setup() {
@@ -9,7 +11,7 @@ void setup() {
     ; // wait for serial port to connect. Needed for Leonardo only
   }
 
-  softSerialB.begin(9600);
+  softSerialB.begin(4800);
 }
 
 void loop() {
@@ -17,7 +19,7 @@ void loop() {
 
   runCommand("AT+CREG?", 500, true);  
   runCommand("AT+CSQ", 500, true);
-  
+  /*
   runCommand("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"", 500, true);
   runCommand("AT+SAPBR=3,1,\"APN\",\"net2.vodafone.pt\"", 500, true);
   runCommand("AT+SAPBR=3,1,\"USER\",\"\"", 500, true);
@@ -31,13 +33,13 @@ void loop() {
   runCommand("AT+HTTPINIT", 1000, true);
   runCommand("AT+HTTPPARA=\"CID\",1", 500, true);
   
-  runCommand("AT+HTTPPARA=\"URL\",\"http://www.checkupdown.com/status/E500_pt.html\"", 500, true);
+  runCommand("AT+HTTPPARA=\"URL\",\"http://www.m2msupport.net/m2msupport/test.php\"", 500, true);
   runCommand("AT+HTTPACTION=0", 30000, false);
   runCommand("AT+HTTPREAD", 30000, true);
   runCommand("AT+HTTPTERM", 500, true);
   runCommand("AT+SAPBR=0,1", 500, true);
-  
-  delay(60000);
+  */
+  delay(20000);
 
 }
 
@@ -45,7 +47,16 @@ void runCommand(String command, int waitInterval, boolean stopAfterOk) {
   
   sendToGsm(command);
 
-  String returnData = waitForGsmResponse(waitInterval, stopAfterOk);
+  //String returnData = waitForGsmResponse(waitInterval, stopAfterOk);
+
+
+  String returnData;
+  
+  if (command == "AT+HTTPACTION=0") {
+    returnData = waitForGsmResponseV2("HTTPACTION:");
+  } else {
+    returnData = waitForGsmResponseV2("OK");
+  }
 
   Serial.println(returnData);
 }
@@ -79,30 +90,27 @@ String waitForGsmResponse(int waitInterval, boolean stopAfterOk) {
   String content = ""; // complete message
   char character = 0; // one character
   int waitCount = 0;
+  String removedContent = "";
+  int dontStopAfterOk = 0;
 
-  while (waitCount < waitInterval || softSerialB.available() > 0) {
-    delay(100);
-    waitCount += 100;
+  while (waitCount < waitInterval) {
+    delay(10);
+    waitCount += 10;
 
-    character = softSerialB.read();
-    
-    if(character != (char)-1) {
-      content.concat(character);
+    while(softSerialB.available() > 0) {
+      character = softSerialB.read();
+      //Serial.write(character);
+      content += character;
+      waitCount = 0;
     }
-    
-    // if data exists disable wait
-    if (softSerialB.available() > 0) {
-      waitCount = 0; // reset counter
-    }
-
+   
     if (content.length() > 0) {
-      
-      if (content.indexOf("\nOK\r") != -1) {
+      if (removedContent.length() == 0 && content.indexOf("OK\r") != -1) {
         if (stopAfterOk) {          
           break;
         } else {
+          removedContent = content;
           content = "";
-          waitCount = 0;
         }
       } else if (content.indexOf("\nERROR\r") != -1) {
         break;
@@ -110,7 +118,60 @@ String waitForGsmResponse(int waitInterval, boolean stopAfterOk) {
     }
   }
 
+  if (removedContent.length() != 0)
+    return removedContent + content;
+
   return content;
 }
+
+String waitForGsmResponseV2(String endingMessage) {
+  String content = ""; // complete message
+  char character = 0; // one character
+
+  int endingMessageLength = endingMessage.length();
+  char firstChar = endingMessage.charAt(0);
+  String comparator = "";
+  boolean comparatorStart = false;
+
+  softSerialB.flush();
+
+  while (true) {
+    //delay(10);
+    
+    while(softSerialB.available() > 0) {
+      character = softSerialB.read();
+      Serial.write(character);
+      content += character;
+
+      if (firstChar == character) {
+        comparatorStart = true;
+        Serial.write("1");
+      }
+
+      if (comparatorStart && comparator.length() != endingMessageLength) {
+        Serial.write("2");
+        comparator += character;  
+      } else if (comparatorStart && comparator.length() == endingMessageLength && comparator == endingMessage) {
+        Serial.write("3");
+        return content;
+      } else if (comparatorStart && comparator.length() == endingMessageLength && comparator != endingMessage) {
+        Serial.write("4");
+        comparator = "";
+        comparatorStart = false;
+      }
+      
+
+    }
+    
+    if (content.length() > 0 && (content.indexOf(endingMessage) != -1 || content.indexOf("\nERROR") != -1)) {
+      //Serial.write("--***--");
+      return content;
+    }
+    
+  }
+}
+
+
+
 
 
