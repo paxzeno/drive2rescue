@@ -2,12 +2,20 @@
 
 SoftwareSerial softSerialB(10, 11); // RX, TX
 
+/*************************************
+ * GSM Get return message variables
+ *************************************/
 char dataContainer[1000];
 int dataContainerLength = 0;
 int dataContainerPosition = 0;
-int maxContainerCaracters = 1000;
+const int maxContainerCaracters = 1000;
 
-void setup() {
+/*************************************
+ *  wait for GSM response timeout
+ *************************************/
+const long timeWaitGsmForResponse = 10000; // 10 seconds
+
+void setup() {  
   Serial.begin(9600);
   while (!Serial) {
     ;
@@ -18,58 +26,79 @@ void setup() {
 
 void loop() {
 
-  char ok[3] =  {'O', 'K', '\r'};
+  char ok[3] =  {'O', 'K', '\r'}; // OK\r
   int okLength = sizeof(ok);
-  char httpAction[11] = {'H', 'T', 'T', 'P', 'A', 'C', 'T', 'I', 'O', 'N', ':'};
+  char httpAction[11] = {'H', 'T', 'T', 'P', 'A', 'C', 'T', 'I', 'O', 'N', ':'}; // HTTPACTION:
   int httpActionLength = sizeof(httpAction);
   
-  runCommand("AT+CREG?", ok, okLength);
-  runCommand("AT+CSQ", ok, okLength);
+  runCommand(F("AT+CREG?"), ok, okLength);
+  runCommand(F("AT+CSQ"), ok, okLength);
 
-  runCommand("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"", ok, okLength);
-  runCommand("AT+SAPBR=3,1,\"APN\",\"net2.vodafone.pt\"", ok, okLength);
-  runCommand("AT+SAPBR=3,1,\"USER\",\"\"", ok, okLength);
-  runCommand("AT+SAPBR=3,1,\"PWD\",\"\"", ok, okLength);
+  runCommand(F("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\""), ok, okLength);
+  runCommand(F("AT+SAPBR=3,1,\"APN\",\"net2.vodafone.pt\""), ok, okLength);
+  runCommand(F("AT+SAPBR=3,1,\"USER\",\"\""), ok, okLength);
+  runCommand(F("AT+SAPBR=3,1,\"PWD\",\"\""), ok, okLength);
 
-  runCommand("AT+SAPBR=0,1", ok, okLength);
-  runCommand("AT+SAPBR=1,1", ok, okLength);
-  runCommand("AT+SAPBR=2,1", ok, okLength);
+  runCommand(F("AT+SAPBR=0,1"), ok, okLength);
+  runCommand(F("AT+SAPBR=1,1"), ok, okLength);
+  runCommand(F("AT+SAPBR=2,1"), ok, okLength);
 
-  runCommand("AT+HTTPTERM", ok, okLength);
-  runCommand("AT+HTTPINIT", ok, okLength);
-  runCommand("AT+HTTPPARA=\"CID\",1", ok, okLength);
-  runCommand("AT+HTTPPARA=\"URL\",\"http://www.m2msupport.net/m2msupport/test.php\"", ok, okLength);
-  runCommand("AT+HTTPACTION=0", httpAction, httpActionLength);
-  runCommand("AT+HTTPREAD", ok, okLength);
-  runCommand("AT+HTTPTERM", ok, okLength);
-  runCommand("AT+SAPBR=0,1", ok, okLength);
+  runCommand(F("AT+HTTPTERM"), ok, okLength);
+  runCommand(F("AT+HTTPINIT"), ok, okLength);
+  runCommand(F("AT+HTTPPARA=\"CID\",1"), ok, okLength);
+  runCommand(F("AT+HTTPPARA=\"URL\",\"http://www.m2msupport.net/m2msupport/test.php\""), ok, okLength);
+  runCommand(F("AT+HTTPACTION=0"), httpAction, httpActionLength);
+  runCommand(F("AT+HTTPREAD"), ok, okLength);
+  runCommand(F("AT+HTTPTERM"), ok, okLength);
+  runCommand(F("AT+SAPBR=0,1"), ok, okLength);
 
   delay(60000);
 
 }
 
+/*************************************************
+ * Process GSM connection
+ *************************************************/
 void runCommand(String command, char endMsg[], int endMsgLength) {
+  
   sendToGsm(command);
 
-  waitForGsmResponse(endMsg, endMsgLength);
+  char output = waitForGsmResponse(endMsg, endMsgLength);
 
-  // print data
-  resetContainerPosition();
-  while(!currentPositionEqualsLength()){
-    Serial.print(getCurrentChar());
+  String value;
+  switch (output) {
+    case 0:
+      value.concat("ERROR: ");
+      value.concat(command);
+      Serial.println(value);
+      break;
+    case 1:
+      printOutput();
+      break;
+    case 2:
+      value.concat("TIMEOUT: ");
+      value.concat(command);
+      Serial.println(value);
+      break;
   }
+}
+
+void printOutput() {
+  resetContainerPosition();
+  
+  while(!currentPositionEqualsLength()){ 
+    Serial.print(getCurrentChar()); 
+  }
+  
   restartContainer();
 }
 
 void sendToGsm(String command) {
-  if (command == "")
-    return; 
-  softSerialB.println(command);
+  if (command != "")
+    softSerialB.println(command);
 }
 
-void waitForGsmResponse(char endMsg[], int endMsgLength) {
-  char character = 0; // empty caracter
-
+char waitForGsmResponse(char endMsg[], int endMsgLength) {
   // end message
   int possibleEndMsgPosition = 0;
   boolean isPossibleEndMsg = false;
@@ -80,23 +109,35 @@ void waitForGsmResponse(char endMsg[], int endMsgLength) {
   int possibleErrorMsgPosition = 0;
   boolean isPossibleErrorMsg = false;
 
+  // time to timeout
+  unsigned long startMillis = millis();
+
+  // 0 => error
+  // 1 => ok
+  // 2 => timeout
+  char outputStatus = 0;
+
   softSerialB.flush();
 
-  while (true) {    
-    while(softSerialB.available() > 0) {
-      character = softSerialB.read();
+  while (true) {
+    if (softSerialB.available() > 0) {
+      char character = softSerialB.read();
       
       if (character != (char)-1){
         //Serial.write(character);
         addChar(character);
-      }
+      } 
 
-      if (isEndMessage(isPossibleEndMsg, possibleEndMsgPosition, endMsg, endMsgLength, character)) {
-        return;
-      } else if (isEndMessage(isPossibleErrorMsg, possibleErrorMsgPosition, errorMsg, errorMsgLength, character)) {
-        return;
+      if (isEndMessage(isPossibleEndMsg, possibleEndMsgPosition, endMsg, endMsgLength, character)) { // ok output
+        return 1;
+      } else if (isEndMessage(isPossibleErrorMsg, possibleErrorMsgPosition, errorMsg, errorMsgLength, character)) { // error output
+        return 0;
       }
       
+      startMillis = millis(); // refresh counter.
+      
+    } else if ((millis() - startMillis) >= timeWaitGsmForResponse) { // check if is timeout time
+        return 2;
     }
   }
 }
@@ -121,8 +162,6 @@ boolean isEndMessage(boolean &isPossibleMsg, int &possibleMsgPosition, char msg[
   
   return false;
 }
-
-
 
 /*************************************************
  * Container Management
