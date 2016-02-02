@@ -29,6 +29,11 @@
 
 SoftwareSerial mySerial(7, 6); // RX, TX
 
+/*************************************
+ *  wait for GSM response timeout
+ *************************************/
+const long timeWaitGsmForResponse = 20000; // 20 seconds
+
 void setup()
 {
   // Open serial communications and wait for port to open:
@@ -52,11 +57,18 @@ void loop() // run over and over
 struct String listeningGpsChannel(String messageType) {
   String content = ""; // complete message
   char character; // one character
+
+  unsigned long startMillis = millis(); // time to timeout
   
   while(true) {
     if (mySerial.available() > 0) {
       character = mySerial.read();
       content.concat(character);
+
+      startMillis = millis(); // refresh counter.
+      
+    } else if ((millis() - startMillis) >= timeWaitGsmForResponse) { // check if is timeout time
+        return "TIMEOUT";
     }
 
     if (character == 13) {

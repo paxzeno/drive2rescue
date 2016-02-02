@@ -5,15 +5,15 @@ SoftwareSerial softSerialB(10, 11); // RX, TX
 /*************************************
  * GSM Get return message variables
  *************************************/
-char dataContainer[1000];
+char dataContainer[1100];
 int dataContainerLength = 0;
 int dataContainerPosition = 0;
-const int maxContainerCaracters = 1000;
+const int maxContainerCaracters = 1100;
 
 /*************************************
  *  wait for GSM response timeout
  *************************************/
-const long timeWaitGsmForResponse = 10000; // 10 seconds
+const long timeWaitGsmForResponse = 20000; // 20 seconds
 
 void setup() {  
   Serial.begin(9600);
@@ -46,13 +46,13 @@ void loop() {
   runCommand(F("AT+HTTPTERM"), ok, okLength);
   runCommand(F("AT+HTTPINIT"), ok, okLength);
   runCommand(F("AT+HTTPPARA=\"CID\",1"), ok, okLength);
-  runCommand(F("AT+HTTPPARA=\"URL\",\"http://www.m2msupport.net/m2msupport/test.php\""), ok, okLength);
+  runCommand(F("AT+HTTPPARA=\"URL\",\"http://31.22.253.69:4567/garbage/10\""), ok, okLength);
   runCommand(F("AT+HTTPACTION=0"), httpAction, httpActionLength);
   runCommand(F("AT+HTTPREAD"), ok, okLength);
   runCommand(F("AT+HTTPTERM"), ok, okLength);
   runCommand(F("AT+SAPBR=0,1"), ok, okLength);
 
-  delay(60000);
+  delay(120000);
 
 }
 
@@ -123,7 +123,7 @@ char waitForGsmResponse(char endMsg[], int endMsgLength) {
     if (softSerialB.available() > 0) {
       char character = softSerialB.read();
       
-      if (character != (char)-1){
+      if (character >= 0 && character <= 127){
         //Serial.write(character);
         addChar(character);
       } 
