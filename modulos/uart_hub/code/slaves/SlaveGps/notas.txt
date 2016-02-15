@@ -1,0 +1,11 @@
+struct MGS_PARTS {
+  String origin;
+  String destination;
+  String operation;
+  String data;
+};
+
+
+Por defeito aceita-se o metodo GPS > WAI que devolve as coordenadas GPS pela operação GPGLL mas na coluna da "data" podemos definir o tipo de operação que queremos escutar assim podemos capturar mais dados como a velocidade e outras coisas.
+
+$GPGLL,3939.53990,N,00822.03619,W,122202.00,A,D*7C

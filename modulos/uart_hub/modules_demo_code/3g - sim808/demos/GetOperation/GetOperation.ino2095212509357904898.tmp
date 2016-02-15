@@ -1,0 +1,322 @@
+#include <SoftwareSerial.h>
+
+SoftwareSerial softSerialB(7, 6); // RX, TX
+
+/*************************************
+ * GSM Get return message variables
+ *************************************/
+char dataContainer[1100];
+int dataContainerLength = 0;
+int dataContainerPosition = 0;
+const int maxContainerCaracters = 1100;
+
+/*************************************
+ * Wait for GSM response timeout
+ *************************************/
+const long timeWaitGsmForResponse = 20000; // 20 seconds
+
+/*************************************
+ * Default expected messages
+ *************************************/
+// ON\n
+char okMsg[3] =  {'O', 'K', '\r'}; 
+int okMsgLength = sizeof(okMsg);
+// HTTPACTION:
+char httpActionMsg[11] = {'H', 'T', 'T', 'P', 'A', 'C', 'T', 'I', 'O', 'N', ':'}; 
+int httpActionMsgLength = sizeof(httpActionMsg);
+
+
+/*************************************/
+void setup() {  
+  Serial.begin(9600);
+  while (!Serial) {
+    ;
+  }
+
+  softSerialB.begin(4800);
+}
+
+void loop() {
+  
+  /*
+  byte outputCode;
+  
+  //runCommand(F("AT+CREG?"), ok, okLength);
+  //runCommand(F("AT+CSQ"), ok, okLength);
+
+  //runCommand(F("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\""), ok, okLength);
+  outputCode = runATCommand(F("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\""), okMsg, okMsgLength);
+  getOutput(outputCode);
+  
+  runCommand(F("AT+SAPBR=3,1,\"APN\",\"net2.vodafone.ptXXXXX\""), okMsg, okMsgLength);
+  runCommand(F("AT+SAPBR=3,1,\"USER\",\"\""), okMsg, okMsgLength);
+  runCommand(F("AT+SAPBR=3,1,\"PWD\",\"\""), okMsg, okMsgLength);
+
+  runCommand(F("AT+SAPBR=0,1"), okMsg, okMsgLength);
+  runCommand(F("AT+SAPBR=1,1"), okMsg, okMsgLength);
+  runCommand(F("AT+SAPBR=2,1"), okMsg, okMsgLength);
+
+  runCommand(F("AT+HTTPTERM"), okMsg, okMsgLength);
+  runCommand(F("AT+HTTPINIT"), okMsg, okMsgLength);
+  runCommand(F("AT+HTTPPARA=\"CID\",1"), okMsg, okMsgLength);
+  runCommand(F("AT+HTTPPARA=\"URL\",\"http://www.m2msupport.net/m2msupport/test.php\""), okMsg, okMsgLength);
+  runCommand(F("AT+HTTPACTION=0"), httpActionMsg, httpActionMsgLength);
+  runCommand(F("AT+HTTPREAD"), okMsg, okMsgLength);
+  runCommand(F("AT+HTTPTERM"), okMsg, okMsgLength);
+  runCommand(F("AT+SAPBR=0,1"), okMsg, okMsgLength);
+  */
+
+  sendInformation();
+
+  Serial.println("retry");
+
+  delay(10000);
+
+}
+
+/*************************************************
+ * Operations
+ *************************************************/
+void sendInformation() {
+  byte outputCode;
+  char noIp[7] = {'0', '.', '0', '.', '0', '.', '0'};
+  int  noIpLength = sizeof(noIp);
+
+  outputCode = runATCommand(F("AT+CSQ"), okMsg, okMsgLength); // check signat
+  getOutput(outputCode);
+  
+  // returns if error or timeout
+  if (outputCode != 1) { 
+    return;
+  }
+
+  // internet connection settings
+  runATCommand(F("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\""), okMsg, okMsgLength);
+  runATCommand(F("AT+SAPBR=3,1,\"APN\",\"net2.vodafone.ptXX\""), okMsg, okMsgLength);
+  runATCommand(F("AT+SAPBR=3,1,\"USER\",\"\""), okMsg, okMsgLength);
+  runATCommand(F("AT+SAPBR=3,1,\"PWD\",\"\""), okMsg, okMsgLength);
+
+  
+  runATCommand(F("AT+SAPBR=0,1"), okMsg, okMsgLength); // close connection 
+  outputCode = runATCommand(F("AT+SAPBR=1,1"), okMsg, okMsgLength); // try to connect
+  //if (outputCode != 1) { 
+  //  return outputCode; 
+  //}  
+
+  outputCode = runATCommand(F("AT+SAPBR=2,1"), okMsg, okMsgLength);
+  getOutput(outputCode); // check internet ip
+
+  if (containerIncludes(noIp, noIpLength)) {
+    Serial.println("OMG it works");
+    return;   
+  } else if (outputCode != 1) { 
+    return; 
+  }  
+
+  runATCommand(F("AT+HTTPTERM"), okMsg, okMsgLength); // close http connection
+  runATCommand(F("AT+HTTPINIT"), okMsg, okMsgLength);
+  runATCommand(F("AT+HTTPPARA=\"CID\",1"), okMsg, okMsgLength);
+
+  runATCommand(F("AT+HTTPPARA=\"URL\",\"http://www.m2msupport.net/m2msupport/test.php\""), okMsg, okMsgLength); // set url
+  runATCommand(F("AT+HTTPACTION=0"), httpActionMsg, httpActionMsgLength); // send command
+  runATCommand(F("AT+HTTPREAD"), okMsg, okMsgLength); // get data
+  runATCommand(F("AT+HTTPTERM"), okMsg, okMsgLength); // terminate http connection
+  runATCommand(F("AT+SAPBR=0,1"), okMsg, okMsgLength); // close connection
+}
+
+
+/*************************************************
+ * Process GSM connection
+ *************************************************/
+byte runATCommand(String command, char endMsg[], int &endMsgLength) {
+  if (command == "")
+    return 0;
+
+  softSerialB.println(command); // send uart command
+
+  return waitForGsmResponse(endMsg, endMsgLength);
+}
+
+/* get data container output */
+void getOutput(byte &outputCode) {
+  switch(outputCode) {
+    case 0:
+      Serial.println("ERROR");
+    break;
+    case 1:
+      printOutput();
+    break;
+    case 2:
+      Serial.println("TIMEOUT");
+    break;
+  }
+}
+
+
+void printOutput() {
+  resetContainerPosition();
+  
+  while(!currentPositionEqualsLength()){ 
+    Serial.print(getCurrentChar()); 
+  }
+  
+  //restartContainer();
+}
+
+byte waitForGsmResponse(char endMsg[], int endMsgLength) {
+  // end message
+  int possibleEndMsgPosition = 0;
+  boolean isPossibleEndMsg = false;
+
+  // error message
+  char errorMsg[6] =  {'E', 'R', 'R', 'O', 'R', '\r'};
+  int errorMsgLength = sizeof(errorMsg);
+  int possibleErrorMsgPosition = 0;
+  boolean isPossibleErrorMsg = false;
+
+  // time to timeout
+  unsigned long startMillis = millis();
+
+  // 0 => error
+  // 1 => ok
+  // 2 => timeout
+  char outputStatus = 0;
+
+  softSerialB.flush();
+  softSerialB.listen();
+
+  restartContainer(); //restart data container to get new data.
+
+  while (true) {
+    if (softSerialB.available() > 0) {
+      char character = softSerialB.read();
+      
+      if (character >= 0 && character <= 127){
+        //Serial.write(character);
+        addChar(character);
+      } 
+
+      if (isEndMessage(isPossibleEndMsg, possibleEndMsgPosition, endMsg, endMsgLength, character)) { // ok output
+        return 1;
+      } else if (isEndMessage(isPossibleErrorMsg, possibleErrorMsgPosition, errorMsg, errorMsgLength, character)) { // error output
+        return 0;
+      }
+      
+      startMillis = millis(); // refresh counter.
+      
+    } else if ((millis() - startMillis) >= timeWaitGsmForResponse) { // check if is timeout time
+        return 2;
+    }
+  }
+}
+
+boolean isEndMessage(boolean &isPossibleMsg, int &possibleMsgPosition, char msg[], int &msgLength, char character) {
+
+  if (!isPossibleMsg && character == msg[0]) {
+    isPossibleMsg = true;
+    possibleMsgPosition = 1;
+  } else if (isPossibleMsg) {
+    if (possibleMsgPosition >= msgLength) {
+      possibleMsgPosition = 0;
+      isPossibleMsg = false;
+      return true;
+    } else if (character == msg[possibleMsgPosition] && possibleMsgPosition < msgLength) {
+      possibleMsgPosition++;
+    } else if (character != msg[possibleMsgPosition]) {
+      possibleMsgPosition = 0;
+      isPossibleMsg = false;
+    }
+  }
+  
+  return false;
+}
+
+/*************************************************
+ * Container Management
+ *************************************************/
+
+// add new character
+void addChar(char value) {
+  if (dataContainerLength >= maxContainerCaracters) 
+    return;
+    
+  dataContainer[dataContainerLength] = value;
+  dataContainerLength++;
+}
+
+// get next character
+char getCurrentChar() {
+  if (dataContainerPosition >= dataContainerLength)
+    return -1;
+
+  dataContainerPosition++;
+  return dataContainer[dataContainerPosition-1];
+}
+
+// is container full ?
+boolean containerFull() {
+  return (dataContainerLength < maxContainerCaracters) ? true : false;
+}
+
+// is current position equals to length
+boolean currentPositionEqualsLength() {
+  return (dataContainerPosition < dataContainerLength) ? false : true;
+}
+
+// reset container parse position
+void resetContainerPosition() {
+  dataContainerPosition = 0;
+}
+
+// restart container so that new data can be added
+void restartContainer() {
+  dataContainerLength = 0;
+  dataContainerPosition = 0;
+}
+
+/* includes text ? */
+boolean containerIncludes(char text[], int textLength) {
+  // end message
+  int possibleMsgPosition = 0;
+  boolean isPossibleMsg = false;
+
+  char character;
+  
+  if (dataContainerLength < textLength) {
+    return false;
+  }
+
+  resetContainerPosition();
+  
+  while(!currentPositionEqualsLength()){ 
+    character = getCurrentChar();
+
+    if (isEndMessage(isPossibleMsg, possibleMsgPosition, text, textLength, character)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
+/*************************************************
+ *************************************************
+ *************************************************/ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
