@@ -1,0 +1,1 @@
+Devido a restricções de memoria do raspberry pi, provavelmente vai ser necessário comprimir as mensagens que são enviadas para o carro com a lista de carros que estão perto.
