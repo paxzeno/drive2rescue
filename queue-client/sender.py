@@ -4,13 +4,14 @@ import message_utils
 
 carConfig = config.config_section_map('MyCar')
 queueConfig = config.config_section_map('QueueConnection')
-url = queueConfig['server_url']
+__url = queueConfig['server_url']
+__port = int(queueConfig['port'])
 car_id = carConfig['vehicle_id']
 
 
 def send(message):
     byte_message = message_utils.prepare_message(message)
-    connection = pika.BlockingConnection(pika.ConnectionParameters(url))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(__url, port=__port))
     channel = connection.channel()
     channel.queue_declare(queue=car_id)
     channel.basic_publish(exchange='',
