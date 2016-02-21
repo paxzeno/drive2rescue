@@ -8,7 +8,7 @@ channel.queue_declare(queue='hello')
 
 
 def callback(ch, method, properties, body):
-    #message_byte_array = bytearray(body)
+    # message_byte_array = bytearray(body)
     with open("message.gz", "wb") as write_message:
         write_message.write(body)
     with gzip.open('message.gz', 'rb') as f:

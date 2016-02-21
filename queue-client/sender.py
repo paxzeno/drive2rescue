@@ -15,7 +15,7 @@ def send(message):
     channel = connection.channel()
     channel.queue_declare(queue=car_id)
     channel.basic_publish(exchange='',
-                          routing_key='hello',
+                          routing_key=car_id,
                           body=byte_message)
     print " [x] Sent to queue[%s] message: %s" % (car_id, message)
     connection.close()
