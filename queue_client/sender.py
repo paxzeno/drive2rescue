@@ -1,6 +1,7 @@
 import pika
-import config
+import common_utils.config as config
 import message_utils
+#import pika.spec.BasicProperties as properties
 
 carConfig = config.config_section_map('MyCar')
 queueConfig = config.config_section_map('QueueConnection')
