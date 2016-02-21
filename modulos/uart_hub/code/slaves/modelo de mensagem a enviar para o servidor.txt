@@ -1,0 +1,2 @@
+ID DO CARRO, Coordenadas N/S, Coordenadas W/E, status da bomba, nivel de agua
+COVXXYXPTO,39.658998333,-8.367269833,0,75
