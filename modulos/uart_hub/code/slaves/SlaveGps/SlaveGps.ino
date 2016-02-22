@@ -1,3 +1,5 @@
+#include <SoftwareSerial.h>
+
 SoftwareSerial softSerialA(10, 11); // RX, TX
 SoftwareSerial softSerialB(7, 6); // RX, TX
 
@@ -7,7 +9,7 @@ SoftwareSerial softSerialB(7, 6); // RX, TX
 const long timeWaitForSerialBResponse = 20000; // 20 seconds
 
 const String ARDUINO_NAME = "GPS";
-const char DIVIDER = ':';
+const char DIVIDER = '|';
 
 struct MGS_PARTS {
   String origin;
@@ -17,6 +19,12 @@ struct MGS_PARTS {
 };
 
 void setup() {
+  
+  //Serial.begin(9600); // DEBUG
+  //while (!Serial) {
+  //  ;
+  //}
+
   softSerialA.begin(9600); // Talking to Master
   softSerialB.begin(9600); // Talking to GPS
   
@@ -32,6 +40,8 @@ void loop() {
     digitalWrite(13, HIGH); // start processing information
     
     runOperation(msgParts);
+
+    // Serial.println(buildResponseMessage(msgParts)); // DEBUG
     
     softSerialA.println(buildResponseMessage(msgParts));
 
@@ -53,6 +63,7 @@ struct MGS_PARTS listeningSerialChannel() {
   while(true) {
     if (softSerialA.available() > 0) {
       character = softSerialA.read();
+      // Serial.write(character); // DEBUG
       content.concat(character);
     }
 
@@ -191,3 +202,8 @@ void runOperation(struct MGS_PARTS &msgParts) {
     msgParts.data = read3gOnlineStatus();
   }
 }
+
+
+
+
+

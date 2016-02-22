@@ -423,7 +423,6 @@ byte waitForGsmResponse(char endMsg[], int endMsgLength) {
       char character = softSerialB.read();
       
       if (character >= 0 && character <= 127){
-        //Serial.write(character);
         addChar(character);
       } 
 
@@ -534,6 +533,11 @@ boolean containerIncludes(char text[], int textLength) {
 /*************************************************
  *************************************************
  *************************************************/ 
+
+
+
+
+
 
 
 

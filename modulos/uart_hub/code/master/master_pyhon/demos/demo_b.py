@@ -5,7 +5,7 @@ global_ser = None
 global_hostname = "MASTER"
 global_divider = "|"
 global_thread_lock = None
-global_wait_for_response_timeout = 60
+global_wait_for_response_timeout = 40
 
 
 ######################################################
@@ -141,10 +141,13 @@ def main():
     global_ser = serial.Serial('COM4', 9600, timeout=1)
     open_serial()  # open connection if not open
 
-    # if check_if_module_is_alive('GPS'):
-    #    get_gps('GPS')
+    if check_if_module_is_alive('GPS'):
+        get_gps('GPS')
+
     if check_if_module_is_alive('3G'):
         send_data_to_gsm('3G', 'hello')
+    else:
+        print "module is not alive"
 
 
 if __name__ == '__main__': main()
