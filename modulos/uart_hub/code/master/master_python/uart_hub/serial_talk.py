@@ -4,14 +4,18 @@ import time
 __SERIAL__ = None
 __PORT__ = 'COM1'
 __BAUD__ = 9600
-__HOSTNAME__ = "MASTER"
 __DIVIDER__ = "|"
 __RESPONSE_TIMEOUT__ = 40
 
 
-def set_response_timeout(value):
+def set_timeout(value):
     global __RESPONSE_TIMEOUT__
     __RESPONSE_TIMEOUT__ = int(value)
+
+
+def get_timeout():
+    global __RESPONSE_TIMEOUT__
+    return __RESPONSE_TIMEOUT__
 
 
 def start_serial():
@@ -58,13 +62,13 @@ def wait_for_response():
 
 # build the message to be send via serial channel
 # example: MASTER|GPS|AYT
-def build_request(module, operation, data=None):
-    global __HOSTNAME__, __DIVIDER__
+def build_request(origin, destination, operation, data=None):
+    global __DIVIDER__
 
     msg = ""
-    msg += __HOSTNAME__
+    msg += origin
     msg += __DIVIDER__
-    msg += module
+    msg += destination
     msg += __DIVIDER__
     msg += operation
 

@@ -20,10 +20,10 @@ struct MGS_PARTS {
 
 void setup() {
   
-  //Serial.begin(9600); // DEBUG
-  //while (!Serial) {
-  //  ;
-  //}
+  Serial.begin(9600); // DEBUG
+  while (!Serial) {
+    ;
+  }
 
   softSerialA.begin(9600); // Talking to Master
   softSerialB.begin(9600); // Talking to GPS
@@ -45,7 +45,7 @@ void loop() {
     
     softSerialA.println(buildResponseMessage(msgParts));
 
-    delay(1000);            // wait for a second
+    //delay(1000);            // wait for a second
     digitalWrite(13, LOW);  // end processing information
   }
 }
@@ -63,7 +63,7 @@ struct MGS_PARTS listeningSerialChannel() {
   while(true) {
     if (softSerialA.available() > 0) {
       character = softSerialA.read();
-      // Serial.write(character); // DEBUG
+      Serial.write(character); // DEBUG
       content.concat(character);
     }
 
@@ -202,6 +202,8 @@ void runOperation(struct MGS_PARTS &msgParts) {
     msgParts.data = read3gOnlineStatus();
   }
 }
+
+
 
 
 
