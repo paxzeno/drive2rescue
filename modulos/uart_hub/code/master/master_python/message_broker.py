@@ -9,6 +9,8 @@ import rabbitmq.provider as provider
 __HOST__ = 'farma-abaco.no-ip.org'
 __PORT__ = 5672
 __QUEUE__ = 'requests'
+__USER__ = 'xyon'
+__PASS__ = 'fenix0'
 
 
 def on_event(ch, method, properties, body):
@@ -24,13 +26,13 @@ def on_event(ch, method, properties, body):
         time.sleep(1/10)
 
         # send response to client
-        p = provider.Provider(__HOST__, __PORT__, destination_queue)
+        p = provider.Provider(__HOST__, __PORT__, __USER__, __PASS__, destination_queue)
         p.connect()
         p.send(json_response)
         p.disconnect()
 
         print "[x] response: ", json_response
-        print()
+        print
 
     except Exception as ex:
         print "[x] error: ", ex
@@ -39,12 +41,12 @@ def on_event(ch, method, properties, body):
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
-def main():
-    print "module start"
-    c = consumer.Consumer(__HOST__, __PORT__, __QUEUE__)
+def main(title):
+    print title
+    c = consumer.Consumer(__HOST__, __PORT__, __USER__, __PASS__, __QUEUE__)
     c.run_with_callback(on_event)
 
     # restart
-    main()
+    main("restart")
 
-if __name__ == '__main__': main()
+if __name__ == '__main__': main("start")

@@ -75,7 +75,7 @@ byte sendInformation() {
 
   // internet connection settings
   runATCommand(F("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\""), okMsg, okMsgLength);
-  runATCommand(F("AT+SAPBR=3,1,\"APN\",\"net2.vodafone.pt\""), okMsg, okMsgLength);
+  runATCommand(F("AT+SAPBR=3,1,\"APN\",\"net.vodafone.pt\""), okMsg, okMsgLength);
   runATCommand(F("AT+SAPBR=3,1,\"USER\",\"\""), okMsg, okMsgLength);
   runATCommand(F("AT+SAPBR=3,1,\"PWD\",\"\""), okMsg, okMsgLength);
 
@@ -255,7 +255,7 @@ byte waitForGsmResponse(char endMsg[], int endMsgLength) {
       char character = softSerialB.read();
       
       if (character >= 0 && character <= 127){
-        //Serial.write(character);
+        Serial.write(character);
         addChar(character);
       } 
 
@@ -367,20 +367,5 @@ boolean containerIncludes(char text[], int textLength) {
 /*************************************************
  *************************************************
  *************************************************/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

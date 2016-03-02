@@ -32,13 +32,15 @@ def start_serial():
     except Exception, error:
         __SERIAL__ = None
         print "Start serial error:"
-        print error
+        print error.message
 
     return False
 
 
 def write_to_serial(msg):
     global __SERIAL__
+    __SERIAL__.flushInput()
+    __SERIAL__.flushOutput()
     __SERIAL__.write(msg)
 
 
@@ -46,10 +48,12 @@ def write_to_serial(msg):
 def wait_for_response():
     global __SERIAL__, __RESPONSE_TIMEOUT__, __DIVIDER__
 
+    if not start_serial():  # start communication
+        return {"origin": "CONNECTION ERROR", "destination": "CONNECTION ERROR",
+                "operation": "CONNECTION ERROR", "data": "CONNECTION ERROR"}
+
     response = ""
     start_time = time.time()
-
-    start_serial()  # start communication
 
     while True:
         response += __SERIAL__.read()

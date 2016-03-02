@@ -5,9 +5,11 @@ from pika.exceptions import ConnectionClosed
 
 
 class Consumer:
-    def __init__(self, host, port, queue, timeout=0):
+    def __init__(self, host, port, username, password, queue, timeout=0):
         self.host = host
         self.port = port
+        self.username = username
+        self.password = password
         self.queue = queue
         self.timeout = timeout
         self.start_timeout = time.time()
@@ -17,7 +19,8 @@ class Consumer:
         try:
             connection = pika.BlockingConnection(
                     pika.ConnectionParameters(host=self.host, port=self.port, connection_attempts=10,
-                                              heartbeat_interval=10))
+                                              heartbeat_interval=120,
+                                              credentials=pika.PlainCredentials(self.username, self.password)))
 
             channel = connection.channel()
             channel.queue_declare(queue=self.queue, durable=True, exclusive=False, auto_delete=False)
@@ -27,7 +30,7 @@ class Consumer:
 
             return True
         except Exception as ex:
-            print ex
+            print ex.message
             return False
 
     def run_sync(self):

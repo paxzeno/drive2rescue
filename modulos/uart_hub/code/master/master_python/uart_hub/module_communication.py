@@ -14,7 +14,7 @@ class OperationManager:
         method = getattr(self, method_name, lambda: "_unknown_error")
         return method()
 
-    # get gps position data=>$GPGLL,3939.53990,N,00822.03619,W,122202.00,A,D*7C
+    # send someting http://XXXXX/operation/xxxx
     def _3g_send_data(self):
         if is_module_alive(self.origin, self.destination):
             return generic_uart_comm(self.origin, self.destination, self.operation, self.data)
@@ -22,10 +22,18 @@ class OperationManager:
             return {"origin": self.destination, "destination": self.origin, "operation": self.operation,
                     "data": "NOT ALIVE"}
 
-    # send someting http://XXXXX/operation/xxxx
+    # get gps position data=>$GPGLL,3939.53990,N,00822.03619,W,122202.00,A,D*7C
     def _gps_wai(self):
         if is_module_alive(self.origin, self.destination):
             return generic_uart_comm(self.origin, self.destination, self.operation)
+        else:
+            return {"origin": self.destination, "destination": self.origin, "operation": self.operation,
+                    "data": "NOT ALIVE"}
+
+    # ...|data|net2.vodafone.pt;;
+    def _3g_set_apn(self):
+        if is_module_alive(self.origin, self.destination):
+            return generic_uart_comm(self.origin, self.destination, self.operation, self.data)
         else:
             return {"origin": self.destination, "destination": self.origin, "operation": self.operation,
                     "data": "NOT ALIVE"}

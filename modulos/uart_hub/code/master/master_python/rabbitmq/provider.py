@@ -4,9 +4,11 @@ from pika.exceptions import AMQPConnectionError, AMQPChannelError
 
 
 class Provider:
-    def __init__(self, host, port, queue):
+    def __init__(self, host, port, username, password, queue):
         self.host = host
         self.port = port
+        self.username = username
+        self.password = password
         self.queue = queue
 
         self.conn = None
@@ -14,16 +16,18 @@ class Provider:
 
     def connect(self):
         try:
-            self.conn = pika.BlockingConnection(pika.ConnectionParameters(host=self.host, port=self.port))
+            self.conn = pika.BlockingConnection(
+                pika.ConnectionParameters(host=self.host, port=self.port, connection_attempts=10,
+                                          credentials=pika.PlainCredentials(self.username, self.password)))
         except AMQPConnectionError as ex:
-            print ex
+            print ex.message
             self.conn = None
 
         if self.conn is not None and self.conn.is_open:
             try:
                 self.channel = self.conn.channel()
             except AMQPChannelError as ex:
-                print ex
+                print ex.message
                 self.channel = None
 
             if self.channel is not None and self.channel.is_open:
@@ -43,7 +47,7 @@ class Provider:
                 return True
             return False
         except Exception as ex:
-            print ex
+            print ex.message
 
     def is_connected(self):
         if self.conn is None or self.conn.is_open is not True:

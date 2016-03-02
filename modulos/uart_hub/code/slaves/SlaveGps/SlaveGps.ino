@@ -20,10 +20,10 @@ struct MGS_PARTS {
 
 void setup() {
   
-  Serial.begin(9600); // DEBUG
-  while (!Serial) {
-    ;
-  }
+  //Serial.begin(9600); // DEBUG
+  //while (!Serial) {
+  //  ;
+  //}
 
   softSerialA.begin(9600); // Talking to Master
   softSerialB.begin(9600); // Talking to GPS
@@ -41,11 +41,8 @@ void loop() {
     
     runOperation(msgParts);
 
-    // Serial.println(buildResponseMessage(msgParts)); // DEBUG
-    
     softSerialA.println(buildResponseMessage(msgParts));
 
-    //delay(1000);            // wait for a second
     digitalWrite(13, LOW);  // end processing information
   }
 }
@@ -63,7 +60,7 @@ struct MGS_PARTS listeningSerialChannel() {
   while(true) {
     if (softSerialA.available() > 0) {
       character = softSerialA.read();
-      Serial.write(character); // DEBUG
+      //Serial.write(character); // DEBUG
       content.concat(character);
     }
 
@@ -93,17 +90,13 @@ struct MGS_PARTS buildMessageParts(String message) {
 
   if (endOri != -1 && endDest != -1) {
     String origin = message.substring(0, endOri);
-    origin.trim();
 
     String destination = message.substring(endOri + 1, endDest);
-    destination.trim();
 
     String operation = (endOpr != -1 ? message.substring(endDest + 1, endOpr) : message.substring(endDest + 1, message.length() - 1));
-    operation.trim();
 
-    String data = (endOpr != -1 ? message.substring(endOpr + 1) : "null");
-    data.trim();
-    
+    String data = (endOpr != -1 ? message.substring(endOpr + 1) : F("null"));
+
     messageParts = { origin, destination, operation, data };
   } else {
     messageParts = { "null", "null", "null", "null" };
@@ -135,7 +128,7 @@ String buildResponseMessage(struct MGS_PARTS &msgParts) {
 
 /* hello response */
 String helloResponse() {
-  return "OK";
+  return F("OK");
 }
 
 /* Wait for GPS information */
@@ -156,7 +149,7 @@ String readGpsPosition() {
       startMillis = millis(); // refresh counter.
       
     } else if ((millis() - startMillis) >= timeWaitForSerialBResponse) { // check if is timeout time
-        return "TIMEOUT";
+        return F("TIMEOUT");
     }
 
     if (character == 13) {
@@ -165,22 +158,22 @@ String readGpsPosition() {
         return content;
       }
 
-      content = "";
+      content = F("");
       character = 0;
     }
   }
 }
 
 String readPumpStatus() {
-  return "1";
+  return F("1");
 }
 
 String readWaterTank() {
-  return "3";
+  return F("3");
 }
 
-String read3gOnlineStatus() {
-  return "1";
+String readGsmgOnlineStatus() {
+  return F("1");
 }
 
 /**************************************************
@@ -190,16 +183,16 @@ void runOperation(struct MGS_PARTS &msgParts) {
   String opr = msgParts.operation;
   String dest = msgParts.destination;
 
-  if (opr == "AYT") {
+  if (opr == F("AYT")) {
     msgParts.data = helloResponse();   
-  } else if (opr == "STATUS" && dest == "PUMP") {
+  } else if (opr == F("STATUS") && dest == F("PUMP")) {
     msgParts.data = readPumpStatus();
-  } else if (opr == "LEVEL" && dest == "WTANK") {
+  } else if (opr == F("LEVEL") && dest == F("WTANK")) {
     msgParts.data = readWaterTank();
-  } else if (opr == "WAI" && dest == "GPS") {
+  } else if (opr == F("WAI") && dest == F("GPS")) {
     msgParts.data = readGpsPosition();
-  } else if (opr == "ISONLINE" && dest == "3G") {
-    msgParts.data = read3gOnlineStatus();
+  } else if (opr == F("ISONLINE") && dest == F("3G")) {
+    msgParts.data = readGsmgOnlineStatus();
   }
 }
 

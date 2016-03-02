@@ -6,10 +6,10 @@ SoftwareSerial softSerialB(7, 6); // RX, TX
 /*************************************
  * GSM Get return message variables
  *************************************/
-char dataContainer[1100];
+char dataContainer[1000];
 int dataContainerLength = 0;
 int dataContainerPosition = 0;
-const int maxContainerCaracters = 1100;
+const int maxContainerCaracters = 1000;
 
 /*************************************
  *  wait for GSM response timeout
@@ -19,14 +19,22 @@ const long timeWaitGsmForResponse = 20000; // 20 seconds
 /*************************************
  * Default expected messages
  *************************************/
-// ON\n
+// OK\n
 char okMsg[3] =  {'O', 'K', '\r'}; 
 int okMsgLength = sizeof(okMsg);
 // HTTPACTION:
 char httpActionMsg[11] = {'H', 'T', 'T', 'P', 'A', 'C', 'T', 'I', 'O', 'N', ':'}; 
 int httpActionMsgLength = sizeof(httpActionMsg);
 
+/*************************************
+ * GSM APN Config
+ *************************************/
+String apnHost = "net2.vodafone.pt";
+String apnUser = "";
+String apnPass = "";
+
 /*************************************/
+
 const String ARDUINO_NAME = "3G";
 const char DIVIDER = '|';
 
@@ -38,6 +46,12 @@ struct MGS_PARTS {
 };
 
 void setup() {
+
+  //Serial.begin(9600); // DEBUG
+  //while (!Serial) {
+  //  ;
+  //}
+
   softSerialA.begin(9600);
   softSerialB.begin(4800); // GSM communication
   
@@ -53,11 +67,7 @@ void loop() {
     digitalWrite(13, HIGH); // start processing information
     
     runOperation(msgParts);
-    //softSerialA.println(buildResponseMessage(msgParts));
-    //softSerialA.print(buildResponseMessage(msgParts));
-    //softSerialA.print("\r\n");
 
-    delay(1000);            // wait for a second
     digitalWrite(13, LOW);  // end processing information
   }
 }
@@ -77,6 +87,7 @@ struct MGS_PARTS listeningSerialChannel() {
 
     if (softSerialA.available() > 0) {
       character = softSerialA.read();
+      //Serial.write(character); // DEBUG
       content.concat(character);
     }
 
@@ -92,7 +103,7 @@ boolean isThisMe(String name) {
 }
 
 /* Parse raw message and build each message part */
-struct MGS_PARTS buildMessageParts(String message) {
+struct MGS_PARTS buildMessageParts(String &message) {
   // Ori:Dest:Opr:Data
   int endOri = message.indexOf(DIVIDER); // Ori:
   int endDest = message.indexOf(DIVIDER, endOri + 1); // Dest:
@@ -102,17 +113,13 @@ struct MGS_PARTS buildMessageParts(String message) {
 
   if (endOri != -1 && endDest != -1) {
     String origin = message.substring(0, endOri);
-    origin.trim();
 
     String destination = message.substring(endOri + 1, endDest);
-    destination.trim();
 
     String operation = (endOpr != -1 ? message.substring(endDest + 1, endOpr) : message.substring(endDest + 1, message.length() - 1));
-    operation.trim();
 
-    String data = (endOpr != -1 ? message.substring(endOpr + 1) : "null");
-    data.trim();
-    
+    String data = (endOpr != -1 ? message.substring(endOpr + 1) : F("null"));
+
     messageParts = { origin, destination, operation, data };
   } else {
     messageParts = { "null", "null", "null", "null" };
@@ -150,26 +157,26 @@ void sendResponseMessage(struct MGS_PARTS &msgParts, boolean &printNewLine) {
 
 /* hello response */
 String helloResponse() {
-  return "OK";
+  return F("OK");
 }
 
 String readGpsPosition() {
-  return "$GPGLL,3939.53990,N,00822.03619,W,122202.00,A,D*7C";
+  return F("$GPGLL,3939.53990,N,00822.03619,W,122202.00,A,D*7C");
 }
 
 String readPumpStatus() {
-  return "1";
+  return F("1");
 }
 
 String readWaterTank() {
-  return "3";
+  return F("3");
 }
 
 String readGsmgOnlineStatus() {
-  return "1";
+  return F("1");
 }
 
-byte sendDataToGsmChannel() {
+byte sendDataToGsmChannel(String &data) {
   byte outputCode;
   
   // 0.0.0.0
@@ -191,9 +198,9 @@ byte sendDataToGsmChannel() {
 
   // internet connection settings
   runATCommand(F("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\""), okMsg, okMsgLength);
-  runATCommand(F("AT+SAPBR=3,1,\"APN\",\"net2.vodafone.pt\""), okMsg, okMsgLength);
-  runATCommand(F("AT+SAPBR=3,1,\"USER\",\"\""), okMsg, okMsgLength);
-  runATCommand(F("AT+SAPBR=3,1,\"PWD\",\"\""), okMsg, okMsgLength);
+  runATCommand("AT+SAPBR=3,1,\"APN\",\"" + apnHost + "\"", okMsg, okMsgLength);
+  runATCommand("AT+SAPBR=3,1,\"USER\",\"" + apnUser + "\"", okMsg, okMsgLength);
+  runATCommand("AT+SAPBR=3,1,\"PWD\",\"" + apnPass + "\"", okMsg, okMsgLength);
 
   
   runATCommand(F("AT+SAPBR=0,1"), okMsg, okMsgLength); // close connection 
@@ -231,7 +238,7 @@ byte sendDataToGsmChannel() {
   runATCommand(F("AT+HTTPPARA=\"CID\",1"), okMsg, okMsgLength); 
   
   // set url
-  runATCommand(F("AT+HTTPPARA=\"URL\",\"http://www.m2msupport.net/m2msupport/test.php\""), okMsg, okMsgLength); 
+  runATCommand("AT+HTTPPARA=\"URL\",\"" + data + "\"", okMsg, okMsgLength); 
   
   // send command
   runATCommand(F("AT+HTTPACTION=0"), httpActionMsg, httpActionMsgLength); 
@@ -242,15 +249,37 @@ byte sendDataToGsmChannel() {
   outputCode = runATCommand(F("AT+HTTPREAD"), okMsg, okMsgLength); 
   
   //getOutput(outputCode);
-  if (outputCode == 1 && !containerIncludes(okHttpReturn, okHttpReturnLength)) {
-    return 4; // not 200 http return
-  }  else if (outputCode == 0) {
+  //if (outputCode == 1 && !containerIncludes(okHttpReturn, okHttpReturnLength)) {
+  //  return 4; // not 200 http return
+  //}  else 
+  if (outputCode == 0) {
     return 9; // error in html data return.
   } else if (outputCode == 2) {
     return 10; // timeout while waiting for html data return.
   }
   
   return outputCode;
+}
+
+// ...|data|net2.vodafone.pt;;
+boolean setApnConfig(String &data) {
+
+  int endHost = data.indexOf(';'); // host:
+  int endUser = data.indexOf(';', endHost + 1); // user:
+
+  if (endHost != -1 && endUser != -1) {
+    apnHost = data.substring(0, endHost);
+    apnUser = data.substring(endHost + 1, endUser);
+    apnPass = data.substring(endUser + 1);
+
+    //Serial.println(apnHost);
+    //Serial.println(apnUser);
+    //Serial.println(apnPass);
+
+    return true;
+  } 
+  
+  return false;
 }
 
 
@@ -268,21 +297,23 @@ void runOperation(struct MGS_PARTS &msgParts) {
   // just used in GSM send data
   byte outputCode;
 
-  if (opr == "AYT") {
+  if (opr == F("AYT")) {
     msgParts.data = helloResponse();   
-  } else if (opr == "STATUS" && dest == "PUMP") {
+  } else if (opr == F("STATUS") && dest == F("PUMP")) {
     msgParts.data = readPumpStatus();
-  } else if (opr == "LEVEL" && dest == "WTANK") {
+  } else if (opr == F("LEVEL") && dest == F("WTANK")) {
     msgParts.data = readWaterTank();
-  } else if (opr == "WAI" && dest == "GPS") {
+  } else if (opr == F("WAI") && dest == F("GPS")) {
     msgParts.data = readGpsPosition();
-  } else if (opr == "ISONLINE" && dest == "3G") {
+  } else if (opr == F("ISONLINE") && dest == F("3G")) {
     msgParts.data = readGsmgOnlineStatus();
-  } else if (opr == "SEND_DATA" && dest == "3G") {
-    outputCode = sendDataToGsmChannel();
+  } else if (opr == F("SEND_DATA") && dest == F("3G")) {
+    outputCode = sendDataToGsmChannel(msgParts.data);
     msgParts.data = "";
     printNewLine = false;
     sendGsmDataContent = true;
+  } else if (opr == F("SET_APN") && dest == F("3G")) {
+    msgParts.data = (setApnConfig(msgParts.data)) ? F("OK") : F("NOK");
   }
 
   sendResponseMessage(msgParts, printNewLine);
@@ -299,7 +330,7 @@ void runOperation(struct MGS_PARTS &msgParts) {
  *************************************************/
 
 byte runATCommand(String command, char endMsg[], int &endMsgLength) {
-  if (command == "")
+  if (command == F(""))
     return 0;
 
   softSerialB.println(command); // send uart command
@@ -423,6 +454,7 @@ byte waitForGsmResponse(char endMsg[], int endMsgLength) {
       char character = softSerialB.read();
       
       if (character >= 0 && character <= 127){
+        //Serial.write(character);
         addChar(character);
       } 
 
@@ -533,19 +565,6 @@ boolean containerIncludes(char text[], int textLength) {
 /*************************************************
  *************************************************
  *************************************************/ 
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
