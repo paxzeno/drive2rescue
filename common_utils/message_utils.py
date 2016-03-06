@@ -1,4 +1,4 @@
-import common_utils.config as config
+import config
 import gzip
 
 compress = config.config_section_map('CompressMessages')['compress']
