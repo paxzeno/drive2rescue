@@ -6,10 +6,10 @@ SoftwareSerial softSerialB(7, 6); // RX, TX
 /*************************************
  * GSM Get return message variables
  *************************************/
-char dataContainer[1000];
+char dataContainer[500];
 int dataContainerLength = 0;
 int dataContainerPosition = 0;
-const int maxContainerCaracters = 1000;
+const int maxContainerCaracters = 500;
 
 /*************************************
  *  wait for GSM response timeout
@@ -47,10 +47,10 @@ struct MGS_PARTS {
 
 void setup() {
 
-  //Serial.begin(9600); // DEBUG
-  //while (!Serial) {
-  //  ;
-  //}
+  Serial.begin(9600); // DEBUG
+  while (!Serial) {
+    ;
+  }
 
   softSerialA.begin(9600);
   softSerialB.begin(4800); // GSM communication
@@ -87,7 +87,7 @@ struct MGS_PARTS listeningSerialChannel() {
 
     if (softSerialA.available() > 0) {
       character = softSerialA.read();
-      //Serial.write(character); // DEBUG
+      Serial.write(character); // DEBUG
       content.concat(character);
     }
 
@@ -183,13 +183,20 @@ byte sendDataToGsmChannel(String &data) {
   char noIp[7] = {'0', '.', '0', '.', '0', '.', '0'};
   int  noIpLength = sizeof(noIp);
 
+  //CSQ: 0,0
+  char noSignal[5] = {':', ' ', '0', ',', '0'};
+  int  noSignalLength = sizeof(noSignal);
+
   // 0,200
   char okHttpReturn[5] = {'0', ',', '2', '0', '0'};
   int  okHttpReturnLength = sizeof(okHttpReturn);
 
   outputCode = runATCommand(F("AT+CSQ"), okMsg, okMsgLength); // check signat
   
-  // returns if error or timeout
+  if (outputCode == 1 && containerIncludes(noSignal, noSignalLength)) {
+    getOutput(outputCode);
+    return 15; // no signal
+  }  else 
   if (outputCode == 0) {
     return 5; // error while start talking to GSM module.
   } else if (outputCode == 2) {
@@ -238,20 +245,25 @@ byte sendDataToGsmChannel(String &data) {
   runATCommand(F("AT+HTTPPARA=\"CID\",1"), okMsg, okMsgLength); 
   
   // set url
-  runATCommand("AT+HTTPPARA=\"URL\",\"" + data + "\"", okMsg, okMsgLength); 
-  
+  String uri = "AT+HTTPPARA=""URL"",""" + data + """";
+  runATCommand(uri, okMsg, okMsgLength);
+
   // send command
-  runATCommand(F("AT+HTTPACTION=0"), httpActionMsg, httpActionMsgLength); 
+  outputCode = runATCommand(F("AT+HTTPACTION=0"), httpActionMsg, httpActionMsgLength); 
+  if (outputCode == 0) {
+    return 13; // error sending command
+  } else if (outputCode == 2) {
+    return 14; // timeout sending command
+  }
 
   delay(2000);
   
   // get data
   outputCode = runATCommand(F("AT+HTTPREAD"), okMsg, okMsgLength); 
-  
-  //getOutput(outputCode);
-  //if (outputCode == 1 && !containerIncludes(okHttpReturn, okHttpReturnLength)) {
-  //  return 4; // not 200 http return
-  //}  else 
+
+  if (outputCode == 1 && !containerIncludes(okHttpReturn, okHttpReturnLength)) {
+    return 4; // not 200 http return
+  }  else 
   if (outputCode == 0) {
     return 9; // error in html data return.
   } else if (outputCode == 2) {
@@ -271,10 +283,6 @@ boolean setApnConfig(String &data) {
     apnHost = data.substring(0, endHost);
     apnUser = data.substring(endHost + 1, endUser);
     apnPass = data.substring(endUser + 1);
-
-    //Serial.println(apnHost);
-    //Serial.println(apnUser);
-    //Serial.println(apnPass);
 
     return true;
   } 
@@ -320,8 +328,9 @@ void runOperation(struct MGS_PARTS &msgParts) {
 
   if (sendGsmDataContent == true) {
     getOutput(outputCode);
-    softSerialA.print("\r\n");
+    //softSerialA.print("\r\n");
     closeGsmConnection();
+    softSerialA.print("\r\n"); // it´s here because closing connection takes time
   }
 }
 
@@ -395,6 +404,15 @@ void getOutput(byte &outputCode) {
     case 12:
       softSerialA.println(F("TIMEOUT_WHILE_OPENNING_HTML_CONNECTION"));
     break;
+    case 13:
+      softSerialA.println(F("SEND_COMMAND_ERROR"));
+    break;
+    case 14:
+      softSerialA.println(F("SEND_COMMAND_TIMEOUT"));
+    break;  
+    case 15:
+      softSerialA.println(F("NO_SIGNAL"));
+    break;  
   }
 }
 
@@ -454,7 +472,7 @@ byte waitForGsmResponse(char endMsg[], int endMsgLength) {
       char character = softSerialB.read();
       
       if (character >= 0 && character <= 127){
-        //Serial.write(character);
+        Serial.write(character);
         addChar(character);
       } 
 
@@ -564,7 +582,7 @@ boolean containerIncludes(char text[], int textLength) {
 
 /*************************************************
  *************************************************
- *************************************************/ 
+ *************************************************/
 
 
 

@@ -23,7 +23,7 @@ def on_event(ch, method, properties, body):
         json_response = json.dumps(response)
 
         # 100 ms of wait to end communication
-        time.sleep(1/10)
+        time.sleep(5/10) # pode ir para o fim para não dar timeout no gajo que fez o pedido.
 
         # send response to client
         p = provider.Provider(__HOST__, __PORT__, __USER__, __PASS__, destination_queue)
