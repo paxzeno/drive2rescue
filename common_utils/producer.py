@@ -1,5 +1,5 @@
 import config
-import common_utils.connection as connection
+from common_utils.connection import Connection
 
 queueConfig = config.config_section_map('QueueConnection')
 __request_queue = str(queueConfig['request_queue_name'])
@@ -14,5 +14,5 @@ def reply(msg):
 
 
 def send(msg, queue):
-    connection.Connection(queue).send(msg.to_queue())
+    Connection(queue).send(msg.to_queue())
 

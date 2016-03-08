@@ -1,17 +1,23 @@
-import common_utils.message as message
+from common_utils.message import Message
 import common_utils.producer as producer
+import common_utils.consumer as consumer
 
 
 def request(body):
-    msg = message.Message("master_queue", "GPS", "Operation", body)
-    producer.request(msg)
+    msg_request = Message("master_queue", "GPS", "Operation", body)
+    producer.request(msg_request)
+    consumer.reply(on_response)
 
 
 def reply(body):
-    msg = message.Message("GPS", "master_queue", "Operation", body)
+    msg = Message("GPS", "master_queue", "Operation", body)
     producer.reply(msg)
 
 
 def send_queue(body, queue_name):
-    msg = message.Message("GPS", "master_queue", "Operation", body)
+    msg = Message("GPS", "master_queue", "Operation", body)
     producer.send(msg, queue_name)
+
+
+def on_response(ch, method, props, body):
+    print("message received: " + str(body))

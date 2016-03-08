@@ -1,4 +1,7 @@
-import pika
+from pika import ConnectionParameters
+from pika import BlockingConnection
+from pika import PlainCredentials
+from pika import BasicProperties
 import common_utils.config as config
 from pika.exceptions import AMQPConnectionError, AMQPChannelError
 
@@ -18,15 +21,16 @@ class Connection:
 
     def __get_channel(self):
         try:
-            self.connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host=self.host, port=self.port, connection_attempts=self.retries,
-                                          credentials=pika.PlainCredentials(self.username, self.password)))
+            self.connection = BlockingConnection(
+                ConnectionParameters(host=self.host, port=self.port, connection_attempts=self.retries,
+                                     credentials=PlainCredentials(self.username, self.password)))
         except AMQPConnectionError as ex:
             print ex.message
             self.channel = None
 
         if self.connection is not None and self.connection.is_open:
             try:
+                self.connection.process_data_events()
                 self.channel = self.connection.channel()
             except AMQPChannelError as ex:
                 print ex.message
@@ -39,12 +43,29 @@ class Connection:
             self.__get_channel()
             send_result = False
             if self.channel.basic_publish(exchange='', routing_key=self.queue, body=msg,
-                                          properties=pika.BasicProperties(delivery_mode=1)):
-                 send_result = True
-
+                                          properties=BasicProperties(delivery_mode=1)):
+                send_result = True
             self.channel.close()
             self.connection.close()
 
             return send_result
+        except Exception as ex:
+            print ex.message
+
+    def listen(self, on_response, timeout=10):
+        try:
+            self.__get_channel()
+            self.channel.basic_consume(on_response, self.queue)
+            self.connection.process_data_events(timeout)
+        except Exception as ex:
+            print ex.message
+
+    def listener(self, on_response):
+        try:
+            self.__get_channel()
+            self.channel.basic_qos(prefetch_count=1)
+            self.channel.basic_consume(on_response, queue=self.queue)
+            print(" [x] Awaiting RPC requests")
+            self.channel.start_consuming()
         except Exception as ex:
             print ex.message
