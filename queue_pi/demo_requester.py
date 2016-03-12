@@ -3,21 +3,37 @@ import common_utils.producer as producer
 import common_utils.consumer as consumer
 
 
-def request(body):
-    msg_request = Message("master_queue", "GPS", "Operation", body)
-    producer.request(msg_request)
-    consumer.reply(on_response)
+class Master:
+    def __init__(self):
+        print('init master')
+        self.response = None
+        self.processed = True
+        self.method = None
+
+    def request(self, body):
+        msg_request = Message("zeno_master_queue", "GPS", "Operation", body)
+        producer.request(msg_request)
+        consumer.reply(self.on_response)
+
+    @staticmethod
+    def reply(body):
+        msg = Message("GPS", "zeno_master_queue", "Operation", body)
+        producer.reply(msg)
+
+    @staticmethod
+    def send_queue(body, queue_name):
+        msg = Message("GPS", "zeno_master_queue", "Operation", body)
+        producer.send(msg, queue_name)
+
+    def on_response(self, ch, method, props, body):
+        print("message received: " + str(body))
+        self.response = body
+        self.method = method
 
 
-def reply(body):
-    msg = Message("GPS", "master_queue", "Operation", body)
-    producer.reply(msg)
+def main():
+    Master().request('xXx : 21:35')
 
 
-def send_queue(body, queue_name):
-    msg = Message("GPS", "master_queue", "Operation", body)
-    producer.send(msg, queue_name)
-
-
-def on_response(ch, method, props, body):
-    print("message received: " + str(body))
+if __name__ == "__main__":
+    main()

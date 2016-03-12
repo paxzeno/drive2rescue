@@ -6,7 +6,7 @@ __request_queue = str(queueConfig['request_queue_name'])
 
 
 def reply(on_response):
-    queue = 'master_queue'
+    queue = 'zeno_master_queue'
     return Connection(queue).listen(on_response)
 
 

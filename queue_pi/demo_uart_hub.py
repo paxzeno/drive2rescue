@@ -10,7 +10,9 @@ def request():
 
 def on_response(ch, method, props, body):
     print("on response: " + body)
-    producer.reply(Message("GPS", "master_queue", "coordinates", "this is a experimental message"))
+    ch.basic_ack(method.delivery_tag)
+    producer.reply(
+        Message("GPS", "zeno_master_queue", "coordinates", "original message:" + body + " and this is the reply"))
 
 
 def main():

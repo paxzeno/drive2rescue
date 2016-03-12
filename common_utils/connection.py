@@ -4,6 +4,7 @@ from pika import PlainCredentials
 from pika import BasicProperties
 import common_utils.config as config
 from pika.exceptions import AMQPConnectionError, AMQPChannelError
+import inspect
 
 
 class Connection:
@@ -55,10 +56,34 @@ class Connection:
     def listen(self, on_response, timeout=10):
         try:
             self.__get_channel()
+            self.channel.basic_qos(prefetch_count=1)
             self.channel.basic_consume(on_response, self.queue)
-            self.connection.process_data_events(timeout)
+            while Connection.__getresponse(on_response) is None:
+                print('waiting for reply')
+                self.connection.process_data_events(timeout)
+                # self.channel.basic_get(queue=self.queue)
+                method = Connection.__getmethod(on_response);
+                if method is not None:
+                    # inspect.getcallargs(on_response, 1, 2, 3, 4)
+                    self.channel.basic_ack(method.delivery_tag)
+                    print('response received, delivery tag: ' + str(method.delivery_tag))
         except Exception as ex:
             print ex.message
+        finally:
+            if self.channel is not None:
+                self.channel.close()
+            if self.connection is not None:
+                self.connection.close()
+
+    # FIXME find a more elegant way to do this.
+    @staticmethod
+    def __getmethod(on_response):
+        return inspect.getmembers(on_response)[15][1].method
+
+    # FIXME find a more elegant way to do this.
+    @staticmethod
+    def __getresponse(on_response):
+        return inspect.getmembers(on_response)[15][1].response
 
     def listener(self, on_response):
         try:
@@ -67,5 +92,11 @@ class Connection:
             self.channel.basic_consume(on_response, queue=self.queue)
             print(" [x] Awaiting RPC requests")
             self.channel.start_consuming()
+            print(" consumed")
         except Exception as ex:
             print ex.message
+        finally:
+            if self.channel is not None:
+                self.channel.close()
+            if self.connection is not None:
+                self.connection.close()
