@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/configIni.iml" filepath="$PROJECT_DIR$/.idea/configIni.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/CarInfoReceiver.iml" filepath="$PROJECT_DIR$/.idea/CarInfoReceiver.iml" />
     </modules>
   </component>
 </project>

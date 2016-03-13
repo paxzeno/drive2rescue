@@ -5,17 +5,19 @@ import (
     "strings"
     "regexp"
     logger "config/log"
+    "rabbitmq"
 )
 
-type HttpConfigs struct  {
+type httpConfigs struct  {
     successResponse []byte
     failResponse []byte
     httpPort string
     urlPath string
     inputRegexValidation string
+    parallelSendToQueue bool
 }
 
-var configs HttpConfigs
+var configs httpConfigs
 
 func init() {
     // default values for configurations
@@ -24,8 +26,7 @@ func init() {
     configs.httpPort = "8080"
     configs.urlPath = "/car_details/"
     configs.inputRegexValidation = `(\w+),(\d+.\d+)?,(\d+.\d+)?,(\d+)?,(\d+)?$`
-
-    logger.SetLog(true, true, true)
+    configs.parallelSendToQueue = false
 }
 
 func LoadConfigs(iniConfigs *(map[string]map[string]string)) {
@@ -34,6 +35,10 @@ func LoadConfigs(iniConfigs *(map[string]map[string]string)) {
     var warn bool = false
     var err bool = false
 
+    // RABBITMQ configs
+    rabbitmq.LoadConfigs(&auxIniConfigs)
+
+    // HTTP
     if auxIniConfigs["Http"]["success_response"] != "" {
         configs.successResponse = []byte(auxIniConfigs["Http"]["success_response"])
     }
@@ -54,6 +59,11 @@ func LoadConfigs(iniConfigs *(map[string]map[string]string)) {
         configs.inputRegexValidation = auxIniConfigs["Http"]["input_regex_validation"]
     }
 
+    if auxIniConfigs["Http"]["parallel_send_to_queue"] == "true" {
+        configs.parallelSendToQueue = true
+    }
+
+    // LOG
     if auxIniConfigs["Log"]["info"] == "true" { info = true }
 
     if auxIniConfigs["Log"]["warning"] == "true" { warn = true }
@@ -69,25 +79,30 @@ func HttpReceiver() {
 }
 
 func carInfoCollector(w http.ResponseWriter, r *http.Request)  {
+    w.Header().Set("Content-Type", "text/html")
     urlPath := r.URL.Path
 
-    w.Header().Set("Content-Type", "text/html")
+    data := getData(&urlPath)
 
-    if validateInput(&urlPath) {
-        logger.Info.Println("success processing request: " + urlPath)
-        w.Write(configs.successResponse)
-    } else {
-        logger.Warning.Println("failed processing request: " + urlPath)
+    if !validateInput(&data) {
+        logger.Warning.Println("Invalid data in request: %s", urlPath)
         w.Write(configs.failResponse)
+        return
     }
+
+    if (configs.parallelSendToQueue) {
+        go rabbitmq.Send(data)
+    } else {
+        rabbitmq.Send(data)
+    }
+
+    logger.Info.Println("Request proccessed: %s", urlPath)
+    w.Write(configs.successResponse)
 }
 
 // check if data respects regex pattern
-func validateInput(urlPath *string) bool {
-    data := getData(urlPath)
-
-    var validID = regexp.MustCompile(configs.inputRegexValidation)
-    if validID.MatchString(data) {
+func validateInput(data *string) bool {
+    if regexp.MustCompile(configs.inputRegexValidation).MatchString(*data) {
         return true
     }
 
