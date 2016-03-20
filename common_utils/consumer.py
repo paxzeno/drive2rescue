@@ -5,9 +5,8 @@ queueConfig = config.config_section_map('QueueConnection')
 __request_queue = str(queueConfig['request_queue_name'])
 
 
-def reply(on_response):
-    queue = 'zeno_master_queue'
-    return Connection(queue).listen(on_response)
+def reply(queue):
+    return Connection(queue).listen_sync()
 
 
 def listen(on_response):
