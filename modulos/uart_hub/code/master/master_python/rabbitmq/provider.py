@@ -17,7 +17,7 @@ class Provider:
     def connect(self):
         try:
             self.conn = pika.BlockingConnection(
-                pika.ConnectionParameters(host=self.host, port=self.port, connection_attempts=10,
+                pika.ConnectionParameters(host=self.host, port=self.port, connection_attempts=10, heartbeat_interval=120,
                                           credentials=pika.PlainCredentials(self.username, self.password)))
         except AMQPConnectionError as ex:
             print ex.message

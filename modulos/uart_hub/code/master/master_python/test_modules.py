@@ -12,8 +12,9 @@ def main():
 
     p = provider.Provider(host, port, username, password, queue)
     p.connect()
-    for i in range(0, 5):
+    for i in range(0, 1):
         # p.send(json.dumps({"origin": "MASTER", "destination": "GPS", "operation": "WAI"}))
+        # p.send(json.dumps({"origin": "MASTER", "destination": "GPS", "operation": "WAI", "data": "net2.vodafone.pt;aa;bb"}))
 
         # p.send(json.dumps({"origin": "MASTER", "destination": "3G", "operation": "SET_APN", "data": "net2.vodafone.pt;aa;bb"}))
 

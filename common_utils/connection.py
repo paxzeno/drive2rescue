@@ -14,9 +14,11 @@ class Connection:
         queue_config = config.config_section_map('QueueConnection')
         self.host = str(queue_config['server_url'])
         self.port = int(queue_config['port'])
-        self.retries = int(queue_config['retries'])
         self.username = str(queue_config['username'])
         self.password = str(queue_config['password'])
+
+        self.retries = 3 if queue_config['retries'] is None else int(queue_config['retries'])
+        self.heartbeat = 60 if queue_config['heartbeat'] is None else int(queue_config['heartbeat'])
 
         self.connection = None
         self.channel = None
@@ -24,12 +26,21 @@ class Connection:
 
     def __close_connection(self):
         """ close channel then close connection """
-        if self.channel is not None and self.channel.is_open:
-            self.channel.close()
-            self.channel = None
-            if self.connection is not None and self.connection.is_open:
-                self.connection.close()
-                self.connection = None
+        if self.connection is not None:
+            if self.channel is not None and self.channel.is_open:
+                try:
+                    self.channel.close()
+                except Exception, ex:
+                    print "error closing channel:", ex
+
+            if self.connection.is_open:
+                try:
+                    self.connection.close()
+                except Exception, ex:
+                        print "error closing connection:", ex
+
+        self.channel = None
+        self.connection = None
 
     def __get_channel(self):
         """ start connection then open channel to queue """
@@ -38,6 +49,7 @@ class Connection:
                     ConnectionParameters(host=self.host,
                                          port=self.port,
                                          connection_attempts=self.retries,
+                                         heartbeat_interval=self.heartbeat,
                                          credentials=PlainCredentials(self.username, self.password)))
         except AMQPConnectionError as ex:
             print ex.message

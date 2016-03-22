@@ -91,7 +91,8 @@ struct MGS_PARTS listeningSerialChannel() {
       content.concat(character);
     }
 
-    if (character == 13) {
+    //if (character == 13) { // o \n (10) passava para a mensagem seguinte.
+    if (character == 10) {
       return buildMessageParts(content);
     }
   }
@@ -113,12 +114,13 @@ struct MGS_PARTS buildMessageParts(String &message) {
 
   if (endOri != -1 && endDest != -1) {
     String origin = message.substring(0, endOri);
-
     String destination = message.substring(endOri + 1, endDest);
+    String operation = (endOpr != -1 ? message.substring(endDest + 1, endOpr) : message.substring(endDest + 1, message.length() - 2));
+    String data = (endOpr != -1 ? message.substring(endOpr + 1, message.length() - 2) : F("null"));
 
-    String operation = (endOpr != -1 ? message.substring(endDest + 1, endOpr) : message.substring(endDest + 1, message.length() - 1));
-
-    String data = (endOpr != -1 ? message.substring(endOpr + 1) : F("null"));
+    // na mensagem segunte estava a passar o \n da mensagem anterior.
+    //String operation = (endOpr != -1 ? message.substring(endDest + 1, endOpr) : message.substring(endDest + 1, message.length() - 1));
+    //String data = (endOpr != -1 ? message.substring(endOpr + 1) : F("null"));
 
     messageParts = { origin, destination, operation, data };
   } else {
@@ -583,8 +585,3 @@ boolean containerIncludes(char text[], int textLength) {
 /*************************************************
  *************************************************
  *************************************************/
-
-
-
-
-

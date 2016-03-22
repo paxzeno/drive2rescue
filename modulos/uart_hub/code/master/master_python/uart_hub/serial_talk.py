@@ -1,11 +1,15 @@
 import serial
 import time
+from common_utils.message import Message
+import common_utils.config as config
+
+__CONFIG__ = config.config_section_map('Uart')
 
 __SERIAL__ = None
-__PORT__ = 'COM1'
-__BAUD__ = 9600
-__DIVIDER__ = "|"
-__RESPONSE_TIMEOUT__ = 40
+__PORT__ = str(__CONFIG__['port'])
+__BAUD__ = int(__CONFIG__['baud'])
+__DIVIDER__ = str(__CONFIG__['divider'])
+__RESPONSE_TIMEOUT__ = int(__CONFIG__['response_timeout'])
 
 
 def set_timeout(value):
@@ -49,8 +53,7 @@ def wait_for_response():
     global __SERIAL__, __RESPONSE_TIMEOUT__, __DIVIDER__
 
     if not start_serial():  # start communication
-        return {"origin": "CONNECTION ERROR", "destination": "CONNECTION ERROR",
-                "operation": "CONNECTION ERROR", "data": "CONNECTION ERROR"}
+        return Message("CONNECTION ERROR", "CONNECTION ERROR", "CONNECTION ERROR", "CONNECTION ERROR")
 
     response = ""
     start_time = time.time()
@@ -61,7 +64,7 @@ def wait_for_response():
         if '\r\n' in response:
             return get_response(response)
         elif (time.time() - start_time) >= __RESPONSE_TIMEOUT__:
-            return {"origin": "TIMEOUT", "destination": "TIMEOUT", "operation": "TIMEOUT", "data": "TIMEOUT"}
+            return Message("TIMEOUT", "TIMEOUT", "TIMEOUT", "TIMEOUT")
 
 
 # build the message to be send via serial channel
@@ -92,6 +95,5 @@ def get_response(msg):
     parts = msg.replace("\r\n", "").split(__DIVIDER__)
 
     if len(parts) is 4:
-        return {"origin": parts[0], "destination": parts[1], "operation": parts[2], "data": parts[3]}
-
-    return {"origin": "ERROR", "destination": "ERROR", "operation": "ERROR", "data": "ERROR"}
+        return Message(parts[0], parts[1], parts[2], parts[3])
+    return Message("ERROR", "ERROR", "ERROR", "ERROR")
