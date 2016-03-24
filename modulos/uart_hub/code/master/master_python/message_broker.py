@@ -1,13 +1,9 @@
-import json
 import time
 import common_utils.consumer as consumer
 import common_utils.producer as producer
 
 from common_utils.message import Message
 from uart_hub.operation_manager import OperationManager
-
-# import rabbitmq.consumer as consumer
-import rabbitmq.provider as provider
 
 __HOST__ = 'farma-abaco.no-ip.org'
 __PORT__ = 5672
@@ -22,18 +18,10 @@ def on_event(ch, method, properties, body):
         print "[x] request: ", queue_msg.to_queue()
 
         response_msg = OperationManager(queue_msg).select()
-
-        # destination_queue = response_msg.destination.lower()
-        # json_response = json.dumps(response)
+        producer.reply(response_msg)
 
         # 100 ms of wait to end communication
         time.sleep(5 / 10)  # pode ir para o fim para nao dar timeout no gajo que fez o pedido.
-
-        # send response to client
-        #p = provider.Provider(__HOST__, __PORT__, __USER__, __PASS__, destination_queue)
-        #p.connect()
-        #p.send(json_response)
-        #p.disconnect()
 
         print "[x] response: ", response_msg.to_queue()
         print

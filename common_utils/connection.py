@@ -73,7 +73,9 @@ class Connection:
             if self.channel.basic_publish(exchange='',
                                           routing_key=self.queue,
                                           body=msg,
-                                          properties=BasicProperties(delivery_mode=1)):
+                                          properties=BasicProperties(delivery_mode=1,
+                                                                     expiration='10000'
+                                                                     )):
                 send_result = True
             self.__close_connection()
 
@@ -136,8 +138,6 @@ class Connection:
 
     @staticmethod
     def __is_timeout(start_time, timeout):
-        print (time.time() - start_time)
-
         if (time.time() - start_time) >= timeout:
             return True
         return False

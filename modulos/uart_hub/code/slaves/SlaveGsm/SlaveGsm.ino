@@ -64,11 +64,13 @@ void loop() {
   struct MGS_PARTS msgParts = listeningSerialChannel();
 
   if (isThisMe(msgParts.destination)) {
+    Serial.println("start");
     digitalWrite(13, HIGH); // start processing information
     
     runOperation(msgParts);
 
     digitalWrite(13, LOW);  // end processing information
+    Serial.println("end");
   }
 }
 
@@ -197,12 +199,12 @@ byte sendDataToGsmChannel(String &data) {
   
   if (outputCode == 1 && containerIncludes(noSignal, noSignalLength)) {
     getOutput(outputCode);
-    return 15; // no signal
+    return 150; // no signal
   }  else 
   if (outputCode == 0) {
-    return 5; // error while start talking to GSM module.
+    return 50; // error while start talking to GSM module.
   } else if (outputCode == 2) {
-    return 6; // timeout while start talking to GSM module.
+    return 60; // timeout while start talking to GSM module.
   }
 
   // internet connection settings
@@ -218,9 +220,9 @@ byte sendDataToGsmChannel(String &data) {
   outputCode = runATCommand(F("AT+SAPBR=1,1"), okMsg, okMsgLength); 
   
   if (outputCode == 0) {
-    return 7; // error while opening GSM connection.
+    return 70; // error while opening GSM connection.
   } else if (outputCode == 2) {
-    return 8; // timeout while opening GSM connection.
+    return 80; // timeout while opening GSM connection.
   }
 
 
@@ -229,7 +231,7 @@ byte sendDataToGsmChannel(String &data) {
 
   if (outputCode == 1 && containerIncludes(noIp, noIpLength)) {
     getOutput(outputCode); // is not connected return 3
-    return 3;
+    return 30;
   } else if (outputCode != 1) {
     return outputCode;
   }
@@ -328,10 +330,16 @@ void runOperation(struct MGS_PARTS &msgParts) {
 
   sendResponseMessage(msgParts, printNewLine);
 
+  
+
   if (sendGsmDataContent == true) {
     getOutput(outputCode);
     //softSerialA.print("\r\n");
-    closeGsmConnection();
+    Serial.println((byte)outputCode);
+
+    if (outputCode < 30) // se o codigo da mensagem for inferior a 30 faz o desconnect
+      closeGsmConnection();
+      
     softSerialA.print("\r\n"); // it´s here because closing connection takes time
   }
 }
@@ -368,52 +376,52 @@ byte runATCommand(String command, char endMsg[], int &endMsgLength) {
 void getOutput(byte &outputCode) {
   switch(outputCode) {
     case 0:
-      softSerialA.println(F("ERROR_RETURN_FROM_AT_COMMAND"));
+      softSerialA.print(F("ERROR_RETURN_FROM_AT_COMMAND"));
     break;
     case 1:
       printOutput();
     break;
     case 2:
-      softSerialA.println(F("TIMEOUT_WAITING_FOR_GSM_RESPONSE"));
+      softSerialA.print(F("TIMEOUT_WAITING_FOR_GSM_RESPONSE"));
     break;
-    case 3:
-      softSerialA.println(F("NOT_CONNECTED"));      
+    case 30:
+      softSerialA.print(F("NOT_CONNECTED"));      
     break;
     case 4:
-      softSerialA.println(F("HTTP_GET_PAGE_ERROR"));
+      softSerialA.print(F("HTTP_GET_PAGE_ERROR"));
     break;    
-    case 5:
-      softSerialA.println(F("ERROR_START_GSM"));
+    case 50:
+      softSerialA.print(F("ERROR_START_GSM"));
     break;
-    case 6:
-      softSerialA.println(F("TIMEOUT_START_GSM"));
+    case 60:
+      softSerialA.print(F("TIMEOUT_START_GSM"));
     break;
-    case 7:
-      softSerialA.println(F("ERROR_OPENING_GSM_CONNECTION"));
+    case 70:
+      softSerialA.print(F("ERROR_OPENING_GSM_CONNECTION"));
     break;
-    case 8:
-      softSerialA.println(F("TIMEOUT_OPENING_GSM_CONNECTION"));
+    case 80:
+      softSerialA.print(F("TIMEOUT_OPENING_GSM_CONNECTION"));
     break;
     case 9:
-      softSerialA.println(F("ERROR_IN_HTML_DATA_RETURN"));
+      softSerialA.print(F("ERROR_IN_HTML_DATA_RETURN"));
     break;
     case 10:
-      softSerialA.println(F("TIMEOUT_WHILE_WAITING_FOR_HTML_DATA"));
+      softSerialA.print(F("TIMEOUT_WHILE_WAITING_FOR_HTML_DATA"));
     break;
     case 11:
-      softSerialA.println(F("ERROR_WHILE_OPENNING_HTML_CONNECTION"));
+      softSerialA.print(F("ERROR_WHILE_OPENNING_HTML_CONNECTION"));
     break;
     case 12:
-      softSerialA.println(F("TIMEOUT_WHILE_OPENNING_HTML_CONNECTION"));
+      softSerialA.print(F("TIMEOUT_WHILE_OPENNING_HTML_CONNECTION"));
     break;
     case 13:
-      softSerialA.println(F("SEND_COMMAND_ERROR"));
+      softSerialA.print(F("SEND_COMMAND_ERROR"));
     break;
     case 14:
-      softSerialA.println(F("SEND_COMMAND_TIMEOUT"));
+      softSerialA.print(F("SEND_COMMAND_TIMEOUT"));
     break;  
-    case 15:
-      softSerialA.println(F("NO_SIGNAL"));
+    case 150:
+      softSerialA.print(F("NO_SIGNAL"));
     break;  
   }
 }
@@ -585,3 +593,11 @@ boolean containerIncludes(char text[], int textLength) {
 /*************************************************
  *************************************************
  *************************************************/
+
+
+
+
+
+
+
+

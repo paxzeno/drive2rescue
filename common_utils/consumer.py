@@ -5,8 +5,8 @@ queueConfig = config.config_section_map('QueueConnection')
 __request_queue = str(queueConfig['request_queue_name'])
 
 
-def reply(queue):
-    return Connection(queue).listen_sync()
+def reply(queue, timeout=10):
+    return Connection(queue).listen_sync(timeout)
 
 
 def listen(on_response):
